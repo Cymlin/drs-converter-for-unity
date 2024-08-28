@@ -1,16 +1,21 @@
-pos_track = { #left position -> note track
-    '45056' : '1',
-    '40960' : '2',
-    '36864' : '3',
-    '32768' : '4',
-    '28672' : '5',
-    '24576' : '6',
-    '20480' : '7',
-    '16384' : '8',
-    '12288' : '9',
-    '8192' : '10',
-    '4096' : '11',
-    '0' : '12'
+pos_track = { #position -> note track
+    '65536' : '1',
+    '61440' : '2',
+    '57344' : '3',
+    '53248' : '4',
+    '49152' : '5',
+    '45056' : '6',
+    '40960' : '7',
+    '36864' : '8',
+    '32768' : '9',
+    '28672' : '10',
+    '24576' : '11',
+    '20480' : '12',
+    '16384' : '13',
+    '12288' : '14',
+    '8192' : '15',
+    '4096' : '16',
+    '0' : '17'
 }
 
 note_color = { #Note type 1 or 2 -> corresponding color
@@ -26,31 +31,31 @@ def step_to_data(thestep): #get the parsed step, slice it to tuple of notes
     elif thestep.find('kind').text == '1' or thestep.find('kind').text == '2': #Blue or Yellow note
         note_type = thestep.find('kind').text
         if thestep.find('long_point') is None: #Standard note
-            return [(f'Note{note_color[note_type]}', thestep.find('start_tick').text[:-1], pos_track[thestep.find('left_pos').text])] #Type, time frame, track
+            return [(f'Note{note_color[note_type]}', thestep.find('start_tick').text[:-1], pos_track[thestep.find('right_pos').text], pos_track[thestep.find('left_pos').text])] #Type, time frame, trackR, trackL
         elif thestep.find('long_point').find('point') is None:
-                return [(f'Note{note_color[note_type]}', thestep.find('start_tick').text[:-1], pos_track[thestep.find('left_pos').text])]
+                return [(f'Note{note_color[note_type]}', thestep.find('start_tick').text[:-1], pos_track[thestep.find('right_pos').text], pos_track[thestep.find('left_pos').text])]
         elif thestep.find('long_point').find('point') is not None: #Long note
             points = thestep.find('long_point').findall('point')
             result = []
             if points[0].find('left_pos').text == thestep.find('left_pos').text: #Analyze the 0th point | Static long note
-                result += [(f'LongNote{note_color[note_type]}', thestep.find('start_tick').text[:-1], str(int(points[0].find('tick').text[:-1]) - int(thestep.find('start_tick').text[:-1])), pos_track[thestep.find('left_pos').text])]#Type, time frame, duration, track
+                result += [(f'LongNote{note_color[note_type]}', thestep.find('start_tick').text[:-1], str(int(points[0].find('tick').text[:-1]) - int(thestep.find('start_tick').text[:-1])), pos_track[thestep.find('right_pos').text], pos_track[thestep.find('left_pos').text])]#Type, time frame, duration, trackR, trackL
                 if points[0].find('left_end_pos') is not None: #L/R slick after Static long note
                     if int(points[0].find('left_end_pos').text) > int(points[0].find('left_pos').text): #R slick
                         result += [(f'RNote{note_color[note_type]}', points[0].find('tick').text[:-1], pos_track[points[0].find('left_pos').text], pos_track[points[0].find('left_end_pos').text])] #Type, time frame, start track, end track
                     elif int(points[0].find('left_end_pos').text) < int(points[0].find('left_pos').text): #L slick
                         result += [(f'LNote{note_color[note_type]}', points[0].find('tick').text[:-1], pos_track[points[0].find('left_pos').text], pos_track[points[0].find('left_end_pos').text])] #Type, time frame, start track, end track
             elif points[0].find('left_pos').text != thestep.find('left_pos').text: #Moving Long note
-                result += [(f'PYLongNote{note_color[note_type]}', thestep.find('start_tick').text[:-1], str(int(points[0].find('tick').text[:-1]) - int(thestep.find('start_tick').text[:-1])), pos_track[thestep.find('left_pos').text], pos_track[points[0].find('left_pos').text])]#Type, time frame, duration, start track, end track
+                result += [(f'PYLongNote{note_color[note_type]}', thestep.find('start_tick').text[:-1], str(int(points[0].find('tick').text[:-1]) - int(thestep.find('start_tick').text[:-1])), pos_track[thestep.find('right_pos').text], pos_track[points[0].find('left_pos').text], pos_track[thestep.find('left_pos').text])]#Type, time frame, duration, start trackR, end track, start trackL
             for x in range(1, len(points)): #Analyze the 1st~ point
                 if points[x].find('left_pos').text == points[x-1].find('left_pos').text and points[x-1].find('left_end_pos') is None: #Mid static long note
-                    result += [(f'ZLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x].find('left_pos').text])]#Type, time frame, duration, note track
+                    result += [(f'ZLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x].find('left_pos').text], pos_track[points[x].find('right_pos').text])]#Type, time frame, duration, trackL, trackR
                 elif points[x].find('left_pos').text != points[x-1].find('left_pos').text and points[x-1].find('left_end_pos') is None: #Mid moving Long note
-                    result += [(f'ZPYLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x-1].find('left_pos').text], pos_track[points[x].find('left_pos').text])]#Type, time frame, duration, start track, end track
+                    result += [(f'ZPYLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x-1].find('right_pos').text], pos_track[points[x].find('left_pos').text], pos_track[points[x-1].find('left_pos').text])]#Type, time frame, duration, start trackR, end track, start trackL
                 elif points[x-1].find('left_end_pos') is not None: #Handle exception caused by L/R slick
                     if points[x].find('left_pos').text == points[x-1].find('left_end_pos').text: #Exception for mid static long note
-                        result += [(f'ZLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x].find('left_pos').text])]
+                        result += [(f'ZLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x].find('right_pos').text], pos_track[points[x].find('left_pos').text])]
                     elif points[x].find('left_pos').text != points[x-1].find('left_end_pos').text: #Exception for mid moving long note
-                        result += [(f'ZPYLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x-1].find('left_end_pos').text], pos_track[points[x].find('left_pos').text])]
+                        result += [(f'ZPYLongNote{note_color[note_type]}', points[x-1].find('tick').text[:-1], str(int(points[x].find('tick').text[:-1]) - int(points[x-1].find('tick').text[:-1])), pos_track[points[x-1].find('right_end_pos').text]), pos_track[points[x].find('left_pos').text], pos_track[points[x-1].find('left_end_pos').text]]
                 if points[x].find('left_end_pos') is not None: #L/R slick after mid long note
                     if int(points[x].find('left_end_pos').text) > int(points[x].find('left_pos').text): #R slick
                         result += [(f'RNote{note_color[note_type]}', points[x].find('tick').text[:-1], pos_track[points[x].find('left_pos').text], pos_track[points[x].find('left_end_pos').text])] #Type, time frame, start track, end track
